@@ -14,7 +14,7 @@
             min-height: 100vh;
             overflow-x: hidden;
         }
-        
+
         .ocean-waves {
             position: fixed;
             bottom: 0;
@@ -25,7 +25,7 @@
             animation: wave 8s linear infinite;
             z-index: 1;
         }
-        
+
         @keyframes wave {
             0% {
                 background-position-x: 0;
@@ -34,7 +34,7 @@
                 background-position-x: 1000px;
             }
         }
-        
+
         .bubbles {
             position: fixed;
             width: 100%;
@@ -42,7 +42,7 @@
             z-index: 0;
             pointer-events: none;
         }
-        
+
         .bubble {
             position: absolute;
             bottom: -20px;
@@ -50,7 +50,7 @@
             border-radius: 50%;
             animation: float 6s infinite ease-in;
         }
-        
+
         @keyframes float {
             0% {
                 transform: translateY(0);
@@ -64,7 +64,7 @@
                 opacity: 0;
             }
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -72,12 +72,12 @@
             position: relative;
             z-index: 2;
         }
-        
+
         header {
             text-align: center;
             padding: 20px 0;
         }
-        
+
         h1 {
             font-size: 4rem;
             margin: 0;
@@ -85,27 +85,27 @@
             position: relative;
             display: inline-block;
         }
-        
+
         .logo-seal {
             font-size: 1.5em;
             display: inline-block;
             transform: rotate(-10deg);
             margin-right: 10px;
         }
-        
+
         .subtitle {
             font-size: 1.5rem;
             margin-top: 10px;
             font-style: italic;
         }
-        
+
         .games-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 30px;
             margin-top: 50px;
         }
-        
+
         .game-card {
             background-color: rgba(255, 255, 255, 0.1);
             border-radius: 20px;
@@ -116,12 +116,12 @@
             position: relative;
             cursor: pointer;
         }
-        
+
         .game-card:hover {
             transform: translateY(-10px);
             box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
         }
-        
+
         .game-content {
             height: 100%;
             display: flex;
@@ -132,24 +132,24 @@
             text-align: center;
             background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.7));
         }
-        
+
         .game-icon {
             font-size: 4rem;
             margin-bottom: 20px;
         }
-        
+
         .game-title {
             font-size: 2rem;
             margin: 0;
             margin-bottom: 10px;
         }
-        
+
         .game-description {
             font-size: 1rem;
             margin: 0;
             max-width: 80%;
         }
-        
+
         footer {
             text-align: center;
             padding: 40px 0 100px;
@@ -157,20 +157,20 @@
             position: relative;
             z-index: 2;
         }
-        
+
         /* Game backgrounds */
         #seal-pac {
             background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%230A3161"/><path d="M10,10 h80 v80 h-80 Z" fill="none" stroke="%23B3E0F2" stroke-width="2" stroke-dasharray="5,5"/><circle cx="25" cy="25" r="5" fill="%23B3E0F2"/><circle cx="45" cy="25" r="5" fill="%23B3E0F2"/><circle cx="65" cy="25" r="5" fill="%23B3E0F2"/><circle cx="85" cy="25" r="5" fill="%23B3E0F2"/><circle cx="25" cy="45" r="5" fill="%23B3E0F2"/><circle cx="45" cy="45" r="5" fill="%23B3E0F2"/><circle cx="65" cy="45" r="5" fill="%23B3E0F2"/><circle cx="85" cy="45" r="5" fill="%23B3E0F2"/></svg>') center/cover;
         }
-        
+
         #seal-tetris {
             background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%232E86AB"/><rect x="20" y="20" width="20" height="20" fill="%23B3E0F2" stroke="%232E86AB" stroke-width="2"/><rect x="40" y="20" width="20" height="20" fill="%23B3E0F2" stroke="%232E86AB" stroke-width="2"/><rect x="60" y="20" width="20" height="20" fill="%23B3E0F2" stroke="%232E86AB" stroke-width="2"/><rect x="40" y="40" width="20" height="20" fill="%23B3E0F2" stroke="%232E86AB" stroke-width="2"/><rect x="20" y="60" width="20" height="20" fill="%23B3E0F2" stroke="%232E86AB" stroke-width="2"/><rect x="40" y="60" width="20" height="20" fill="%23B3E0F2" stroke="%232E86AB" stroke-width="2"/></svg>') center/cover;
         }
-        
+
         #seal-asteroids {
             background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23000B29"/><circle cx="20" cy="20" r="5" fill="%23FFFFFF"/><circle cx="40" cy="70" r="3" fill="%23FFFFFF"/><circle cx="70" cy="30" r="4" fill="%23FFFFFF"/><circle cx="80" cy="80" r="6" fill="%23FFFFFF"/><circle cx="30" cy="40" r="2" fill="%23FFFFFF"/><circle cx="60" cy="60" r="3" fill="%23FFFFFF"/><circle cx="90" cy="10" r="1" fill="%23FFFFFF"/></svg>') center/cover;
         }
-        
+
         #seal-pong {
             background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23004D7A"/><rect x="10" y="40" width="5" height="20" fill="%23FFFFFF"/><rect x="85" y="40" width="5" height="20" fill="%23FFFFFF"/><circle cx="50" cy="50" r="3" fill="%23FFFFFF"/><line x1="50" y1="10" x2="50" y2="90" stroke="%23FFFFFF" stroke-width="2" stroke-dasharray="5,5"/></svg>') center/cover;
         }
@@ -179,39 +179,39 @@
 <body>
     <div class="ocean-waves"></div>
     <div class="bubbles" id="bubbles"></div>
-    
+
     <div class="container">
         <header>
             <h1><span class="logo-seal">🦭</span> SEAL ARCADE</h1>
             <p class="subtitle">Dive into fun with our flipper-flapping games!</p>
         </header>
-        
+
         <div class="games-container">
-            <a href="#seal-pac-game" class="game-card" id="seal-pac">
+            <a href="seal-pac.html" class="game-card" id="seal-pac">
                 <div class="game-content">
                     <div class="game-icon">🦭🐟</div>
                     <h2 class="game-title">Seal-Pac</h2>
                     <p class="game-description">Help a hungry seal navigate mazes while eating fish and avoiding sharks!</p>
                 </div>
             </a>
-            
-            <a href="#seal-tetris-game" class="game-card" id="seal-tetris">
+
+            <a href="seal-tris.html" class="game-card" id="seal-tetris">
                 <div class="game-content">
                     <div class="game-icon">🦭➕</div>
                     <h2 class="game-title">Seal-tris</h2>
                     <p class="game-description">Stack bendy seal shapes to clear rows in this flippery twist on a classic!</p>
                 </div>
             </a>
-            
-            <a href="#seal-asteroids-game" class="game-card" id="seal-asteroids">
+
+            <a href="seal-steroids.html" class="game-card" id="seal-asteroids">
                 <div class="game-content">
                     <div class="game-icon">🦭☄️</div>
                     <h2 class="game-title">Seal-steroids</h2>
                     <p class="game-description">Chase fish in the deep sea while avoiding dangerous predators!</p>
                 </div>
             </a>
-            
-            <a href="#seal-pong-game" class="game-card" id="seal-pong">
+
+            <a href="seal-pong.html" class="game-card" id="seal-pong">
                 <div class="game-content">
                     <div class="game-icon">🦭🐟🦭</div>
                     <h2 class="game-title">Seal-Pong</h2>
@@ -219,63 +219,63 @@
                 </div>
             </a>
         </div>
-        
+
         <footer>
             <p>© 2025 Seal Arcade - The most flipper-flapping fun on the web!</p>
         </footer>
     </div>
-    
+
     <script>
         // Create bubbles
         function createBubbles() {
             const bubblesContainer = document.getElementById('bubbles');
-            
+
             for (let i = 0; i < 50; i++) {
                 const bubble = document.createElement('div');
                 bubble.classList.add('bubble');
-                
+
                 // Random size and position
                 const size = Math.floor(Math.random() * 20) + 5;
                 const left = Math.floor(Math.random() * 100);
-                
+
                 bubble.style.width = `${size}px`;
                 bubble.style.height = `${size}px`;
                 bubble.style.left = `${left}%`;
-                
+
                 // Random animation duration and delay
                 const duration = Math.floor(Math.random() * 10) + 6;
                 const delay = Math.floor(Math.random() * 5);
-                
+
                 bubble.style.animationDuration = `${duration}s`;
                 bubble.style.animationDelay = `${delay}s`;
-                
+
                 bubblesContainer.appendChild(bubble);
             }
         }
-        
+
         // Add swimming seals that occasionally appear
         function createSwimmingSeals() {
             const container = document.querySelector('.container');
-            
+
             setInterval(() => {
                 if (Math.random() > 0.7) {
                     const seal = document.createElement('div');
-                    
+
                     seal.style.position = 'fixed';
                     seal.style.fontSize = '3rem';
                     seal.style.zIndex = '1';
                     seal.textContent = '🦭';
-                    
+
                     // Random vertical position
                     const top = Math.floor(Math.random() * 80) + 10;
                     seal.style.top = `${top}%`;
-                    
+
                     // Start from left or right
                     const fromLeft = Math.random() > 0.5;
                     if (fromLeft) {
                         seal.style.left = '-50px';
                         seal.style.transform = 'scaleX(1)';
-                        
+
                         // Animate from left to right
                         const animation = seal.animate([
                             { left: '-50px' },
@@ -284,12 +284,12 @@
                             duration: 10000,
                             easing: 'ease-in-out'
                         });
-                        
+
                         animation.onfinish = () => seal.remove();
                     } else {
                         seal.style.right = '-50px';
                         seal.style.transform = 'scaleX(-1)';
-                        
+
                         // Animate from right to left
                         const animation = seal.animate([
                             { right: '-50px' },
@@ -298,29 +298,20 @@
                             duration: 10000,
                             easing: 'ease-in-out'
                         });
-                        
+
                         animation.onfinish = () => seal.remove();
                     }
-                    
+
                     document.body.appendChild(seal);
                 }
             }, 3000);
         }
-        
+
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             createBubbles();
             createSwimmingSeals();
-            
-            // Placeholder game links - in a real implementation, these would navigate to the actual games
-            document.querySelectorAll('.game-card').forEach(card => {
-                card.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const gameName = card.querySelector('.game-title').textContent;
-                    alert(`${gameName} is loading soon! 🦭`);
-                });
-            });
+
+            // Game links are now directly in the href of the <a> tags
         });
     </script>
-</body>
-</html>
