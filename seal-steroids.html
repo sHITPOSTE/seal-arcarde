@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seal-steroids - Deep Sea Survival</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #000b29, #001f3f); /* Very dark blue space/deep sea */
+            color: #fff;
+            font-family: 'Trebuchet MS', sans-serif;
+            margin: 0;
+            overflow: hidden; /* Hide scrollbars potentially caused by canvas */
+        }
+        canvas {
+            border: 3px solid #777;
+            background-color: #000B29; /* Match body start */
+        }
+        h1 {
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px #000;
+        }
+        #score, #status {
+            font-size: 1.2em;
+            margin: 5px;
+        }
+        a {
+            color: #b3e0f2;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🦭 Seal-steroids ☄️</h1>
+    <div id="score">Fish Collected: 0</div>
+    <div id="status">Chase the fish 🐟, avoid predators! <span style="color:red;">🐙</span><span style="color:orange;">🐡</span></div>
+    <canvas id="gameCanvas" width="600" height="500"></canvas>
+    <a href="index.html">Back to Seal Arcade</a>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const statusDisplay = document.getElementById('status');
+
+        const SEAL_SIZE = 20;
+        const FISH_SIZE = 8;
+        const PREDATOR_SIZE_MIN = 25;
+        const PREDATOR_SIZE_MAX = 40;
+        const PREDATOR_SPEED_MIN = 0.5;
+        const PREDATOR_SPEED_MAX = 1.5;
+        const NUM_FISH = 15;
+        const NUM_PREDATORS = 5;
+        const FRICTION = 0.98; // Slow down seal gradually
+        const THRUST_POWER = 0.15;
+
+        let score = 0;
+        let seal;
+        let fish = [];
+        let predators = [];
+        let keys = {};
+        let gameOver = false;
+
+        // --- Classes (Simplified) ---
+        class Seal {
+            constructor() {
+                this.x = canvas.width / 2;
+                this.y = canvas.height / 2;
+                this.vx = 0;
+                this.vy = 0;
+                this.angle = -Math.PI / 2; // Start facing up
+                this.size = SEAL_SIZE;
+                this.color = '#A9A9A9'; // Grey
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                // Draw simple triangle for seal
+                ctx.beginPath();
+                ctx.moveTo(this.size / 2, 0); // Nose
+                ctx.lineTo(-this.size / 2, -this.size / 3);
+                ctx.lineTo(-this.size / 2, this.size / 3);
+                ctx.closePath();
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                 // Draw thrust flame if moving forward
+                 if (keys['ArrowUp']) {
+                     ctx.beginPath();
+                     ctx.moveTo(-this.size / 2, -this.size / 4);
+                     ctx.lineTo(-this.size * 0.8, 0);
+                     ctx.lineTo(-this.size / 2, this.size / 4);
+                     ctx.closePath();
+                     ctx.fillStyle = 'orange';
+                     ctx.fill();
+                 }
+                ctx.restore();
+            }
+
+            update() {
+                // Apply thrust
+                if (keys['ArrowUp']) {
+                    this.vx += Math.cos(this.angle) * THRUST_POWER;
+                    this.vy += Math.sin(this.angle) * THRUST_POWER;
+                }
+                // Apply rotation
+                if (keys['ArrowLeft']) {
+                    this.angle -= 0.05;
+                }
+                if (keys['ArrowRight']) {
+                    this.angle += 0.05;
+                }
+
+                // Apply friction
+                this.vx *= FRICTION;
+                this.vy *= FRICTION;
+
+                // Update position
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Screen wrap
+                if (this.x < -this.size / 2) this.x = canvas.width + this.size / 2;
+                if (this.x > canvas.width + this.size / 2) this.x = -this.size / 2;
+                if (this.y < -this.size / 2) this.y = canvas.height + this.size / 2;
+                if (this.y > canvas.height + this.size / 2) this.y = -this.size / 2;
+            }
+        }
+
+        class Fish {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = FISH_SIZE;
+                this.color = '#FFA500'; // Orange
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        class Predator {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * (PREDATOR_SIZE_MAX - PREDATOR_SIZE_MIN) + PREDATOR_SIZE_MIN;
+                 const speed = Math.random() * (PREDATOR_SPEED_MAX - PREDATOR_SPEED_MIN) + PREDATOR_SPEED_MIN;
+                 const angle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.color = Math.random() < 0.5 ? '#FF4500' : '#DC143C'; // Orangey-red or Crimson (Octopus/Puffer?)
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                // Simple circle predator
+                 ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
+                // Or a spiky look?
+                // const points = 8;
+                // for (let i = 0; i < points * 2; i++) {
+                //     const radius = i % 2 === 0 ? this.size / 2 : this.size / 3;
+                //     const angle = (i / points) * Math.PI;
+                //     ctx.lineTo(this.x + radius * Math.cos(angle), this.y + radius * Math.sin(angle));
+                // }
+                // ctx.closePath();
+
+                ctx.fill();
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Screen wrap
+                if (this.x < -this.size / 2) this.x = canvas.width + this.size / 2;
+                if (this.x > canvas.width + this.size / 2) this.x = -this.size / 2;
+                if (this.y < -this.size / 2) this.y = canvas.height + this.size / 2;
+                if (this.y > canvas.height + this.size / 2) this.y = -this.size / 2;
+            }
+        }
+
+        // --- Game Functions ---
+        function checkCollisions() {
+             if (gameOver) return;
+
+             // Seal vs Fish
+            fish.forEach((f, index) => {
+                const dx = seal.x - f.x;
+                const dy = seal.y - f.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < (seal.size + f.size) / 2) {
+                    fish.splice(index, 1); // Remove fish
+                    score++;
+                    scoreDisplay.textContent = `Fish Collected: ${score}`;
+                    // Add new fish to replace collected one
+                    fish.push(new Fish());
+                    if (fish.length === 0) { // Should not happen with replacement, but good check
+                         // You could implement levels here
+                     }
+                }
+            });
+
+            // Seal vs Predators
+            predators.forEach(p => {
+                const dx = seal.x - p.x;
+                const dy = seal.y - p.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < (seal.size / 2 + p.size / 2) * 0.8) { // *0.8 for slightly more forgiving collision
+                    gameOver = true;
+                    statusDisplay.textContent = 'Game Over! Caught by a predator!';
+                }
+            });
+        }
+
+        function drawBackgroundStars() {
+             ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'; // Faint white stars
+             for (let i=0; i<100; i++) { // Draw some 'stars' each frame (could be pre-calculated)
+                 let x = Math.random() * canvas.width;
+                 let y = Math.random() * canvas.height;
+                 let size = Math.random() * 1.5;
+                 ctx.fillRect(x, y, size, size);
+             }
+        }
+
+        function gameLoop() {
+            // Clear canvas
+            ctx.fillStyle = '#000B29'; // Background color
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+             drawBackgroundStars(); // Add some visual interest
+
+            if (gameOver) {
+                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                 ctx.fillRect(0, 0, canvas.width, canvas.height);
+                 ctx.fillStyle = 'white';
+                 ctx.font = '30px Arial';
+                 ctx.textAlign = 'center';
+                 ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
+                 ctx.font = '16px Arial';
+                  ctx.fillText("Press Enter to Restart", canvas.width / 2, canvas.height / 2 + 40);
+                 return; // Stop the loop
+             }
+
+
+            // Update and Draw
+            seal.update();
+            seal.draw();
+
+            fish.forEach(f => f.draw());
+
+            predators.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            // Check Collisions
+            checkCollisions();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Initialization ---
+        function initGame() {
+            score = 0;
+            gameOver = false;
+            scoreDisplay.textContent = `Fish Collected: ${score}`;
+            statusDisplay.innerHTML = 'Chase the fish 🐟, avoid predators! <span style="color:red;">🐙</span><span style="color:orange;">🐡</span>'; // Use innerHTML for colored spans
+
+            seal = new Seal();
+            fish = [];
+            predators = [];
+
+            for (let i = 0; i < NUM_FISH; i++) {
+                fish.push(new Fish());
+            }
+            for (let i = 0; i < NUM_PREDATORS; i++) {
+                // Avoid spawning predator right on top of starting seal
+                 let p;
+                 do {
+                    p = new Predator();
+                 } while (Math.sqrt((p.x-seal.x)**2 + (p.y-seal.y)**2) < PREDATOR_SIZE_MAX * 2); // Ensure minimum start distance
+                predators.push(p);
+            }
+            keys = {}; // Reset keys pressed state
+        }
+
+        // --- Controls ---
+        document.addEventListener('keydown', (e) => {
+            if (gameOver && e.key === 'Enter') {
+                 initGame();
+                 requestAnimationFrame(gameLoop); // Restart loop
+                 return;
+             }
+             if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                 e.preventDefault(); // Prevent page scrolling
+                 keys[e.key] = true;
+             }
+        });
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Start Game
+        initGame();
+        requestAnimationFrame(gameLoop);
+
+    </script>
+</body>
+</html>
