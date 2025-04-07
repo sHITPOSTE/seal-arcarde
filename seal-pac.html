@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seal-Pac - Underwater Maze Chase</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #0077be, #004466);
+            color: #fff;
+            font-family: 'Trebuchet MS', sans-serif;
+            margin: 0;
+        }
+        canvas {
+            border: 3px solid #fff;
+            background-color: #0a3161; /* Deep blue maze background */
+        }
+        h1 {
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px #000;
+        }
+        #score, #status {
+            font-size: 1.2em;
+            margin: 5px;
+        }
+        a {
+            color: #b3e0f2;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🦭 Seal-Pac 🐟</h1>
+    <div id="score">Fish Eaten: 0</div>
+    <div id="status">Avoid the Sharks! 🦈</div>
+    <canvas id="gameCanvas" width="440" height="440"></canvas>
+    <a href="index.html">Back to Seal Arcade</a>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const statusDisplay = document.getElementById('status');
+
+        const tileSize = 20;
+        const rows = canvas.height / tileSize;
+        const cols = canvas.width / tileSize;
+
+        let score = 0;
+        let fishCount = 0;
+        let gameEnded = false;
+
+        // Maze layout: 0 = empty, 1 = wall, 2 = fish, 3 = shark start, 4 = seal start
+        const map = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,4,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,1],
+            [1,2,1,1,1,2,1,1,1,2,1,1,2,1,1,1,2,1,1,1,2,1],
+            [1,2,1,1,1,2,1,1,1,2,1,1,2,1,1,1,2,1,1,1,2,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,2,1,1,1,2,1,2,1,1,1,1,1,1,2,1,2,1,1,1,2,1],
+            [1,2,2,2,2,2,1,2,2,2,1,1,2,2,2,1,2,2,2,2,2,1],
+            [1,1,1,1,1,2,1,1,1,0,1,1,0,1,1,1,2,1,1,1,1,1],
+            [0,0,0,0,1,2,1,0,0,0,0,0,0,0,0,1,2,1,0,0,0,0],
+            [1,1,1,1,1,2,1,0,1,1,3,3,1,1,0,1,2,1,1,1,1,1],
+            [1,2,2,2,2,2,0,0,1,0,0,0,0,1,0,0,2,2,2,2,2,1],
+            [1,1,1,1,1,2,1,0,1,1,1,1,1,1,0,1,2,1,1,1,1,1],
+            [0,0,0,0,1,2,1,0,0,0,0,0,0,0,0,1,2,1,0,0,0,0],
+            [1,1,1,1,1,2,1,0,1,1,1,1,1,1,0,1,2,1,1,1,1,1],
+            [1,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,1],
+            [1,2,1,1,1,2,1,1,1,2,1,1,2,1,1,1,2,1,1,1,2,1],
+            [1,2,2,2,1,2,2,2,2,2,2,2,2,2,2,2,1,2,2,2,2,1],
+            [1,1,2,2,1,2,1,2,1,1,1,1,1,1,2,1,1,1,1,1,2,1],
+            [1,2,2,2,2,2,1,2,2,2,1,1,2,2,2,1,2,2,2,2,2,1],
+            [1,2,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,2,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        let seal = { x: 0, y: 0, dx: 0, dy: 0, size: tileSize * 0.8 };
+        let sharks = [];
+
+        function initGame() {
+            score = 0;
+            fishCount = 0;
+            sharks = [];
+            gameEnded = false;
+            statusDisplay.textContent = 'Avoid the Sharks! 🦈';
+            scoreDisplay.textContent = 'Fish Eaten: 0';
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (map[r][c] === 2) fishCount++;
+                    if (map[r][c] === 4) {
+                        seal.x = c * tileSize + tileSize / 2;
+                        seal.y = r * tileSize + tileSize / 2;
+                    }
+                    if (map[r][c] === 3) {
+                        sharks.push({
+                            x: c * tileSize + tileSize / 2,
+                            y: r * tileSize + tileSize / 2,
+                            dx: (Math.random() < 0.5 ? -1 : 1) * 1, // Slower speed
+                            dy: 0,
+                            size: tileSize * 0.9
+                        });
+                        map[r][c] = 0; // Clear shark start position
+                    }
+                }
+            }
+            seal.dx = 0;
+            seal.dy = 0;
+        }
+
+        function drawWalls() {
+            ctx.fillStyle = '#003355'; // Darker blue for walls
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (map[r][c] === 1) {
+                        ctx.fillRect(c * tileSize, r * tileSize, tileSize, tileSize);
+                    }
+                }
+            }
+        }
+
+        function drawFish() {
+            ctx.fillStyle = '#FFA500'; // Orange fish
+             for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (map[r][c] === 2) {
+                        ctx.beginPath();
+                        ctx.arc(c * tileSize + tileSize / 2, r * tileSize + tileSize / 2, tileSize * 0.2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+        }
+
+        function drawSeal() {
+            ctx.fillStyle = '#A9A9A9'; // Grey seal
+            ctx.beginPath();
+            ctx.arc(seal.x, seal.y, seal.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Simple eye
+            ctx.fillStyle = 'black';
+            let eyeX = seal.x + (seal.dx > 0 ? seal.size / 4 : (seal.dx < 0 ? -seal.size / 4 : 0));
+             let eyeY = seal.y + (seal.dy > 0 ? seal.size / 4 : (seal.dy < 0 ? -seal.size / 4 : -seal.size / 6)); // Look slightly up if not moving vertically
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeY, seal.size * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawSharks() {
+            ctx.fillStyle = '#FF0000'; // Red sharks
+            sharks.forEach(shark => {
+                ctx.beginPath();
+                // Simple triangle shape for shark
+                 let angle = Math.atan2(shark.dy, shark.dx);
+                 ctx.moveTo(shark.x + Math.cos(angle) * shark.size / 2, shark.y + Math.sin(angle) * shark.size / 2);
+                 ctx.lineTo(shark.x + Math.cos(angle + Math.PI * 0.8) * shark.size / 2, shark.y + Math.sin(angle + Math.PI * 0.8) * shark.size / 2);
+                 ctx.lineTo(shark.x + Math.cos(angle - Math.PI * 0.8) * shark.size / 2, shark.y + Math.sin(angle - Math.PI * 0.8) * shark.size / 2);
+                ctx.closePath();
+                ctx.fill();
+            });
+        }
+
+        function isWall(x, y) {
+            const gridX = Math.floor(x / tileSize);
+            const gridY = Math.floor(y / tileSize);
+            // Check boundaries
+            if (gridX < 0 || gridX >= cols || gridY < 0 || gridY >= rows) {
+                return true;
+            }
+            return map[gridY][gridX] === 1;
+        }
+
+        function updateSeal() {
+            if (gameEnded) return;
+
+            let nextX = seal.x + seal.dx;
+            let nextY = seal.y + seal.dy;
+            const tolerance = seal.size / 2 - 1; // Allow slight overlap before hitting wall
+
+             // Check corners for collision
+             let tl_x = nextX - tolerance, tl_y = nextY - tolerance;
+             let tr_x = nextX + tolerance, tr_y = nextY - tolerance;
+             let bl_x = nextX - tolerance, bl_y = nextY + tolerance;
+             let br_x = nextX + tolerance, br_y = nextY + tolerance;
+
+             if (!isWall(tl_x, tl_y) && !isWall(tr_x, tr_y) && !isWall(bl_x, bl_y) && !isWall(br_x, br_y)) {
+                seal.x = nextX;
+                seal.y = nextY;
+            } else {
+                 // If moving horizontally and hit a wall, stop horizontal move
+                 if (seal.dx !== 0 && (isWall(nextX + Math.sign(seal.dx)*tolerance, seal.y-tolerance) || isWall(nextX + Math.sign(seal.dx)*tolerance, seal.y+tolerance))) {
+                     seal.x = Math.floor(seal.x / tileSize) * tileSize + tileSize / 2; // Snap to grid center
+                     seal.dx = 0;
+                 }
+                 // If moving vertically and hit a wall, stop vertical move
+                 if (seal.dy !== 0 && (isWall(seal.x-tolerance, nextY + Math.sign(seal.dy)*tolerance) || isWall(seal.x+tolerance, nextY + Math.sign(seal.dy)*tolerance))) {
+                    seal.y = Math.floor(seal.y / tileSize) * tileSize + tileSize / 2; // Snap to grid center
+                    seal.dy = 0;
+                 }
+                 // Allow sliding if only one direction is blocked
+                 if (seal.dx != 0 && !isWall(nextX + Math.sign(seal.dx)*tolerance, seal.y-tolerance) && !isWall(nextX + Math.sign(seal.dx)*tolerance, seal.y+tolerance)) seal.x = nextX;
+                 if (seal.dy != 0 && !isWall(seal.x-tolerance, nextY + Math.sign(seal.dy)*tolerance) && !isWall(seal.x+tolerance, nextY + Math.sign(seal.dy)*tolerance)) seal.y = nextY;
+
+
+            }
+
+
+             // Screen wrapping (like original Pac-Man) - simplified here
+             if (seal.x < -seal.size / 2) seal.x = canvas.width + seal.size / 2;
+             if (seal.x > canvas.width + seal.size / 2) seal.x = -seal.size / 2;
+             // No vertical wrapping in this map design
+
+            // Check fish collision
+            const sealGridX = Math.floor(seal.x / tileSize);
+            const sealGridY = Math.floor(seal.y / tileSize);
+            if (map[sealGridY] && map[sealGridY][sealGridX] === 2) {
+                map[sealGridY][sealGridX] = 0; // Eat fish
+                score++;
+                fishCount--;
+                scoreDisplay.textContent = `Fish Eaten: ${score}`;
+                if (fishCount === 0) {
+                    statusDisplay.textContent = 'You Win! All Fish Eaten!';
+                    gameEnded = true;
+                }
+            }
+        }
+
+        function updateSharks() {
+             if (gameEnded) return;
+             const speed = 1; // Shark speed
+
+            sharks.forEach(shark => {
+                let potentialMoves = [];
+                // Check possible directions (avoiding walls)
+                if (!isWall(shark.x + speed, shark.y) && shark.dx <= 0) potentialMoves.push({ dx: speed, dy: 0 }); // Prefer not to reverse immediately
+                if (!isWall(shark.x - speed, shark.y) && shark.dx >= 0) potentialMoves.push({ dx: -speed, dy: 0 });
+                if (!isWall(shark.x, shark.y + speed) && shark.dy <= 0) potentialMoves.push({ dx: 0, dy: speed });
+                if (!isWall(shark.x, shark.y - speed) && shark.dy >= 0) potentialMoves.push({ dx: 0, dy: -speed });
+
+
+                // If at an intersection or stuck, choose a random valid direction
+                 if (potentialMoves.length > 1 || isWall(shark.x + shark.dx, shark.y + shark.dy) ) {
+                     // Try to prevent immediate reversal unless necessary
+                     let nonReversingMoves = potentialMoves.filter(move => move.dx !== -shark.dx || move.dy !== -shark.dy);
+                     if (nonReversingMoves.length > 0) {
+                         let move = nonReversingMoves[Math.floor(Math.random() * nonReversingMoves.length)];
+                         shark.dx = move.dx;
+                         shark.dy = move.dy;
+                     } else if (potentialMoves.length > 0) {
+                          let move = potentialMoves[Math.floor(Math.random() * potentialMoves.length)];
+                          shark.dx = move.dx;
+                          shark.dy = move.dy;
+                     } else {
+                         // Should not happen if map is correct, but stop if it does
+                         shark.dx = 0;
+                         shark.dy = 0;
+                     }
+                }
+
+                // Move shark
+                 let nextX = shark.x + shark.dx;
+                 let nextY = shark.y + shark.dy;
+
+                // Simplified collision check with walls
+                if (!isWall(nextX + Math.sign(shark.dx)*shark.size/2, nextY + Math.sign(shark.dy)*shark.size/2)) {
+                    shark.x = nextX;
+                    shark.y = nextY;
+                } else {
+                    // If blocked, try to find a new path immediately (basic)
+                     shark.dx = 0; shark.dy = 0; // Force re-evaluation next frame
+                }
+
+
+                 // Wrap around screen like seal
+                if (shark.x < -shark.size / 2) shark.x = canvas.width + shark.size / 2;
+                if (shark.x > canvas.width + shark.size / 2) shark.x = -shark.size / 2;
+
+                // Check collision with seal
+                const dx = seal.x - shark.x;
+                const dy = seal.y - shark.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < (seal.size + shark.size) / 2) {
+                    statusDisplay.textContent = 'Game Over! Caught by a Shark!';
+                    gameEnded = true;
+                }
+            });
+        }
+
+
+        function gameLoop() {
+            if (gameEnded) {
+                 // Optionally draw a game over message
+                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                 ctx.fillRect(0, 0, canvas.width, canvas.height);
+                 ctx.fillStyle = 'white';
+                 ctx.font = '30px Arial';
+                 ctx.textAlign = 'center';
+                 ctx.fillText(statusDisplay.textContent, canvas.width / 2, canvas.height / 2);
+                 ctx.font = '16px Arial';
+                  ctx.fillText("Press Enter to Restart", canvas.width / 2, canvas.height / 2 + 40);
+                 return; // Stop the loop
+             }
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw elements
+            drawWalls();
+            drawFish();
+            drawSeal();
+            drawSharks();
+
+            // Update positions and check collisions
+            updateSeal();
+            updateSharks(); // Sharks move after seal
+
+            // Request next frame
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Handle keyboard input
+        document.addEventListener('keydown', (e) => {
+            const speed = 2.5; // Seal speed
+            if (gameEnded && e.key === 'Enter') {
+                 initGame(); // Reinitialize map and positions
+                 requestAnimationFrame(gameLoop); // Restart loop
+                 return;
+             }
+             if (gameEnded) return;
+
+            switch (e.key) {
+                case 'ArrowUp':
+                    seal.dy = -speed;
+                    seal.dx = 0;
+                    break;
+                case 'ArrowDown':
+                    seal.dy = speed;
+                    seal.dx = 0;
+                    break;
+                case 'ArrowLeft':
+                    seal.dx = -speed;
+                    seal.dy = 0;
+                    break;
+                case 'ArrowRight':
+                    seal.dx = speed;
+                    seal.dy = 0;
+                    break;
+            }
+        });
+
+        // Start the game
+        initGame();
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
