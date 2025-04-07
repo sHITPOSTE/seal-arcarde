@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seal-Pong - Aquatic Paddle Battle</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #004d7a, #002b44); /* Pong-like blue gradient */
+            color: #fff;
+            font-family: 'Trebuchet MS', sans-serif;
+            margin: 0;
+        }
+        canvas {
+            border: 3px solid #fff;
+            background-color: #004D7A; /* Match body start */
+        }
+        h1 {
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px #000;
+        }
+        #status {
+            font-size: 1.2em;
+            margin: 10px;
+            height: 1.5em; /* Reserve space */
+        }
+        a {
+            color: #b3e0f2;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🦭 Seal-Pong 🐟🦭</h1>
+    <div id="status">First to 5 points wins!</div>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <a href="index.html">Back to Seal Arcade</a>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusDisplay = document.getElementById('status');
+
+        const PADDLE_HEIGHT = 80;
+        const PADDLE_WIDTH = 15;
+        const FISH_SIZE = 10; // The 'ball'
+        const WINNING_SCORE = 5;
+
+        let player1Score = 0;
+        let player2Score = 0; // AI score
+        let gameRunning = true; // Controls if paddles/fish move
+
+        // Player Paddle (Seal 1)
+        let player1 = {
+            x: 10,
+            y: canvas.height / 2 - PADDLE_HEIGHT / 2,
+            width: PADDLE_WIDTH,
+            height: PADDLE_HEIGHT,
+            color: '#D3D3D3', // Light grey seal
+            dy: 5 // Speed
+        };
+
+        // AI Paddle (Seal 2)
+        let player2 = {
+            x: canvas.width - PADDLE_WIDTH - 10,
+            y: canvas.height / 2 - PADDLE_HEIGHT / 2,
+            width: PADDLE_WIDTH,
+            height: PADDLE_HEIGHT,
+            color: '#A9A9A9', // Darker grey seal
+            dy: 3 // AI speed (make it beatable)
+        };
+
+        // Fish (Ball)
+        let fish = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            size: FISH_SIZE,
+            dx: 4, // Initial horizontal speed
+            dy: 4, // Initial vertical speed
+            color: '#FFA500' // Orange fish
+        };
+
+        let keys = {}; // Store key states
+
+        // --- Drawing Functions ---
+        function drawRect(x, y, w, h, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, w, h);
+        }
+
+        function drawCircle(x, y, r, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawNet() {
+            ctx.beginPath();
+            ctx.setLineDash([10, 10]); // Dashed line style
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset line dash
+        }
+
+        function drawText(text, x, y, color, size = "60px") {
+            ctx.fillStyle = color;
+            ctx.font = `${size} 'Trebuchet MS', sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText(text, x, y);
+        }
+
+         function drawSealFace(paddle) {
+             ctx.fillStyle = 'black';
+             const eyeSize = paddle.width * 0.2;
+             const eyeYOffset = paddle.height * 0.2;
+             const noseSize = paddle.width * 0.15;
+             const noseYOffset = paddle.height * 0.35;
+
+             // Eyes (simple dots)
+             ctx.beginPath();
+             ctx.arc(paddle.x + paddle.width / 2, paddle.y + eyeYOffset, eyeSize, 0, Math.PI*2);
+             ctx.fill();
+             // Nose (simple dot)
+              ctx.beginPath();
+             ctx.arc(paddle.x + paddle.width / 2, paddle.y + noseYOffset, noseSize, 0, Math.PI*2);
+             ctx.fill();
+         }
+
+        // --- Update Functions ---
+        function movePaddles() {
+            // Player 1 movement (W/S keys)
+            if (keys['w'] || keys['W']) {
+                player1.y -= player1.dy;
+            }
+            if (keys['s'] || keys['S']) {
+                player1.y += player1.dy;
+            }
+
+            // Keep player 1 paddle within bounds
+            if (player1.y < 0) {
+                player1.y = 0;
+            } else if (player1.y + player1.height > canvas.height) {
+                player1.y = canvas.height - player1.height;
+            }
+
+            // AI Player 2 movement (simple tracking)
+             const paddleCenter = player2.y + player2.height / 2;
+             const fishCenter = fish.y;
+             const errorMargin = 5; // Prevent jittering when perfectly aligned
+
+            if (paddleCenter < fishCenter - errorMargin) {
+                player2.y += player2.dy;
+             } else if (paddleCenter > fishCenter + errorMargin) {
+                 player2.y -= player2.dy;
+             }
+
+            // Keep player 2 paddle within bounds
+            if (player2.y < 0) {
+                player2.y = 0;
+            } else if (player2.y + player2.height > canvas.height) {
+                player2.y = canvas.height - player2.height;
+            }
+        }
+
+        function moveFish() {
+            fish.x += fish.dx;
+            fish.y += fish.dy;
+
+            // Collision with top/bottom walls
+            if (fish.y - fish.size < 0 || fish.y + fish.size > canvas.height) {
+                fish.dy *= -1; // Reverse vertical direction
+                 // Ensure fish doesn't get stuck in wall
+                 if(fish.y - fish.size < 0) fish.y = fish.size;
+                 if(fish.y + fish.size > canvas.height) fish.y = canvas.height - fish.size;
+            }
+
+            // Collision with player 1 paddle
+            if (fish.dx < 0 && // Moving left
+                fish.x - fish.size < player1.x + player1.width &&
+                fish.x + fish.size > player1.x &&
+                fish.y + fish.size > player1.y &&
+                fish.y - fish.size < player1.y + player1.height)
+            {
+                fish.dx *= -1.05; // Reverse horizontal direction and slightly increase speed
+                // Adjust vertical angle based on where it hits the paddle
+                let collidePoint = (fish.y - (player1.y + player1.height / 2)) / (player1.height / 2);
+                fish.dy = collidePoint * 5; // Max vertical speed change
+                 fish.x = player1.x + player1.width + fish.size; // Prevent sticking
+            }
+
+            // Collision with player 2 paddle
+            if (fish.dx > 0 && // Moving right
+                fish.x + fish.size > player2.x &&
+                fish.x - fish.size < player2.x + player2.width &&
+                fish.y + fish.size > player2.y &&
+                fish.y - fish.size < player2.y + player2.height)
+            {
+                fish.dx *= -1.05; // Reverse horizontal direction and slightly increase speed
+                 let collidePoint = (fish.y - (player2.y + player2.height / 2)) / (player2.height / 2);
+                 fish.dy = collidePoint * 5;
+                 fish.x = player2.x - fish.size; // Prevent sticking
+            }
+
+            // Score points
+            if (fish.x - fish.size < 0) { // Player 2 scores
+                player2Score++;
+                resetFish();
+            } else if (fish.x + fish.size > canvas.width) { // Player 1 scores
+                player1Score++;
+                resetFish();
+            }
+
+             // Limit fish speed
+             const maxSpeed = 10;
+             if (Math.abs(fish.dx) > maxSpeed) fish.dx = Math.sign(fish.dx) * maxSpeed;
+             if (Math.abs(fish.dy) > maxSpeed) fish.dy = Math.sign(fish.dy) * maxSpeed;
+        }
+
+        function resetFish() {
+            fish.x = canvas.width / 2;
+            fish.y = canvas.height / 2;
+            // Serve to the player who didn't score last (or randomly?)
+            // Let's serve opposite to who scored
+            let direction = (fish.dx > 0) ? -1 : 1; // If fish was going right (P1 scored), serve left. Else serve right.
+            fish.dx = 4 * direction;
+             // Give slight random vertical angle
+             fish.dy = (Math.random() * 6) - 3; // -3 to +3
+
+             // Check for winner
+            if (player1Score >= WINNING_SCORE || player2Score >= WINNING_SCORE) {
+                gameRunning = false;
+                 statusDisplay.textContent = `${player1Score >= WINNING_SCORE ? 'Player 1' : 'Player 2'} Wins! Press Enter.`;
+            } else {
+                 statusDisplay.textContent = "Get ready...";
+                 // Pause briefly before serving
+                 gameRunning = false;
+                 setTimeout(() => {
+                     if(player1Score < WINNING_SCORE && player2Score < WINNING_SCORE) { // Ensure game didn't end during timeout
+                        statusDisplay.textContent = ""; // Clear message
+                        gameRunning = true;
+                     }
+                 }, 1500); // 1.5 second pause
+            }
+        }
+
+        // --- Game Loop ---
+        function gameLoop() {
+            // Clear canvas
+            drawRect(0, 0, canvas.width, canvas.height, '#004D7A'); // Background
+
+            // Draw elements
+            drawNet();
+            drawRect(player1.x, player1.y, player1.width, player1.height, player1.color);
+             drawSealFace(player1);
+            drawRect(player2.x, player2.y, player2.width, player2.height, player2.color);
+             drawSealFace(player2);
+
+             if (gameRunning) {
+                 drawCircle(fish.x, fish.y, fish.size, fish.color);
+             }
+
+            // Draw scores
+            drawText(player1Score, canvas.width * 0.25, 70, '#FFFFFF');
+            drawText(player2Score, canvas.width * 0.75, 70, '#FFFFFF');
+
+            // Update positions if game is running
+            if (gameRunning) {
+                movePaddles();
+                moveFish();
+             } else if (player1Score < WINNING_SCORE && player2Score < WINNING_SCORE && statusDisplay.textContent === "") {
+                 // If paused for reset but not game over, show scores clearly maybe
+                 // Currently handled by the brief "Get ready..." message
+             } else if (!gameRunning && (player1Score >= WINNING_SCORE || player2Score >= WINNING_SCORE)){
+                 // Game over screen is handled by statusDisplay text
+             }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Initialization ---
+        function initGame() {
+             player1Score = 0;
+             player2Score = 0;
+             player1.y = canvas.height / 2 - PADDLE_HEIGHT / 2; // Reset paddle positions
+             player2.y = canvas.height / 2 - PADDLE_HEIGHT / 2;
+             statusDisplay.textContent = `First to ${WINNING_SCORE} points wins! Press Enter to start.`;
+             keys = {}; // Reset keys
+             // Don't start fish movement until Enter is pressed
+             gameRunning = false;
+
+             // Initial draw before loop starts
+             drawRect(0, 0, canvas.width, canvas.height, '#004D7A');
+             drawNet();
+             drawRect(player1.x, player1.y, player1.width, player1.height, player1.color);
+              drawSealFace(player1);
+             drawRect(player2.x, player2.y, player2.width, player2.height, player2.color);
+              drawSealFace(player2);
+             drawText(player1Score, canvas.width * 0.25, 70, '#FFFFFF');
+             drawText(player2Score, canvas.width * 0.75, 70, '#FFFFFF');
+             drawText("Press Enter", canvas.width/2, canvas.height/2, '#FFFFFF', '30px')
+        }
+
+
+        // --- Controls ---
+        document.addEventListener('keydown', (e) => {
+             if (e.key === 'Enter') {
+                 if (!gameRunning) { // Start or restart the game
+                     initGame(); // Reset scores etc.
+                     resetFish(); // Position fish and start countdown/movement logic
+                     statusDisplay.textContent = ""; // Clear initial/end message
+                     gameRunning = true; // Allow movement
+                     requestAnimationFrame(gameLoop); // Ensure loop is running if it wasn't
+                 }
+             } else {
+                 keys[e.key] = true;
+             }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Initial setup message
+        initGame(); // Call once to display initial state and message
+
+
+    </script>
+</body>
+</html>
